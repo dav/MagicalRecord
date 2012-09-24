@@ -13,6 +13,10 @@ static NSString const * kMagicalRecordManagedObjectContextKey = @"MagicalRecord_
 static void const * kMagicalRecordNotifiesMainContextAssociatedValueKey = @"kMagicalRecordNotifiesMainContextOnSave";
        NSString * const kMagicalRecordDidMergeChangesFromiCloudNotification = @"kMagicalRecordDidMergeChangesFromiCloudNotification";
 
+#if MR_ENABLE_ACTIVE_RECORD_LOGGING
+static int mainContextMergeCount = 0;
+#endif
+
 @interface NSManagedObjectContext (MagicalRecordPrivate)
 
 - (void) MR_mergeChangesFromNotification:(NSNotification *)notification;
@@ -127,9 +131,12 @@ static void const * kMagicalRecordNotifiesMainContextAssociatedValueKey = @"kMag
 
 - (void) MR_mergeChangesFromNotification:(NSNotification *)notification;
 {
-	MRLog(@"Merging changes to %@context%@", 
-          self == [NSManagedObjectContext MR_defaultContext] ? @"*** DEFAULT *** " : @"",
-          ([NSThread isMainThread] ? @" *** on Main Thread ***" : @""));
+  BOOL isMainContext = (self == [NSManagedObjectContext MR_defaultContext]);
+  if (isMainContext) {
+    MRLog(@"MAIN CONTEXT MERGE COUNT = %d", ++mainContextMergeCount);
+  }
+  
+	MRLog(@"Merging changes to %@context%@", isMainContext ? @"*** DEFAULT *** " : @"", ([NSThread isMainThread] ? @" *** on Main Thread ***" : @""));
     
 	[self mergeChangesFromContextDidSaveNotification:notification];
 }
@@ -167,7 +174,9 @@ static void const * kMagicalRecordNotifiesMainContextAssociatedValueKey = @"kMag
 		MRLog(@"Saving %@Context%@", 
               self == [[self class] MR_defaultContext] ? @" *** Default *** ": @"",
               ([NSThread isMainThread] ? @" *** on Main Thread ***" : @""));
-        
+    
+    MRLog(@"Inserted=%d; Updated=%d; Deleted=%d", [[self insertedObjects] count], [[self updatedObjects] count], [[self deletedObjects] count]);
+    
 		saved = [self save:&error];
 	}
 	@catch (NSException *exception)
@@ -284,7 +293,7 @@ static void const * kMagicalRecordNotifiesMainContextAssociatedValueKey = @"kMag
 		{
 			threadContext = [self MR_contextThatNotifiesDefaultContextOnMainThread];
 			[threadDict setObject:threadContext forKey:kMagicalRecordManagedObjectContextKey];
-		}
+    }
 		return threadContext;
 	}
 }
