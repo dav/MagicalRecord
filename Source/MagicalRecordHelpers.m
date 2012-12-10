@@ -443,6 +443,7 @@ NSInteger* newColorComponentsFromString(NSString *serializedColor)
     [colorScanner scanUpToString:@"(" intoString:&colorType];
     
     NSInteger *componentValues = malloc(4 * sizeof(NSInteger));
+  componentValues[0]=componentValues[1]=componentValues[2]=componentValues[3]=0;
     if ([colorType hasPrefix:@"rgba"])
     {
         NSCharacterSet *rgbaCharacterSet = [NSCharacterSet characterSetWithCharactersInString:@"(,)"];
