@@ -171,19 +171,22 @@ static int mainContextMergeCount = 0;
 	
 	@try
 	{
-		MRLog(@"Saving %@Context%@", 
+		MRLog(@"Saving %@Context%@",
               self == [[self class] MR_defaultContext] ? @" *** Default *** ": @"",
               ([NSThread isMainThread] ? @" *** on Main Thread ***" : @""));
     
     MRLog(@"Inserted=%d; Updated=%d; Deleted=%d", [[self insertedObjects] count], [[self updatedObjects] count], [[self deletedObjects] count]);
     
 		saved = [self save:&error];
+    if (error) {
+      MRLog(@"!!!!!!! MR ERROR: %@", error);
+    }
 	}
 	@catch (NSException *exception)
 	{
-		MRLog(@"Problem saving: %@", (id)[exception userInfo] ?: (id)[exception reason]);	
+		MRLog(@"Problem saving: %@", (id)[exception userInfo] ?: (id)[exception reason]);
 	}
-	@finally 
+	@finally
     {
         if (saved && [self respondsToSelector:@selector(parentContext)] && [self performSelector:@selector(parentContext)])
         {
@@ -271,6 +274,7 @@ static int mainContextMergeCount = 0;
         PRIVATE_QUEUES_ENABLED(
                                if (enabled)
                                {
+                                 NSLog(@"PARENT CONTEXT");
                                    [self setParentContext:mainContext];
                                }
                                )
@@ -351,6 +355,7 @@ static int mainContextMergeCount = 0;
         context = [[[self alloc] initWithConcurrencyType:NSPrivateQueueConcurrencyType] autorelease];
         if (context != [self MR_defaultContext])
         {
+          NSLog(@"PARENT CONTEXT");
             [context setParentContext:[NSManagedObjectContext MR_defaultContext]];
         }
     )
